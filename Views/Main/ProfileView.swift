@@ -33,19 +33,19 @@ struct ProfileView: View {
                 .listRowBackground(Color.clear)
 
                 // SECTION 2: ACHIEVEMENTS
-                Section("Your Progress") {
+                Section(header: Text("Your Progress")) {
                     achievementsGrid
                 }
 
                 // SECTION 3: BADGES
                 if !userManager.earnedBadges.isEmpty {
-                    Section("Badges") {
+                    Section(header: Text("Badges")) {
                         ForEach(userManager.earnedBadges, id: \.self) { badge in
                             HStack {
                                 Image(systemName: badge.icon)
                                     .foregroundColor(badge.color)
                                     .frame(width: 30)
-                                Text(badge.rawValue)
+                                Text(badge.localizedName)
                                     .fontWeight(.medium)
                                 Spacer()
                                 Image(systemName: "checkmark.circle.fill")
@@ -56,7 +56,7 @@ struct ProfileView: View {
                 }
 
                 // SECTION 4: PHYSICAL STATS
-                Section("Physical Stats") {
+                Section(header: Text("Physical Stats")) {
                     StatRow(title: "Age", value: "\(userManager.age)", icon: "calendar", color: .purple)
                     StatRow(title: "Height", value: "\(Int(userManager.userHeight)) cm", icon: "figure.walk", color: .blue)
                     StatRow(title: "Weight", value: "\(Int(userManager.userWeight)) kg", icon: "scalemass", color: .green)
@@ -64,13 +64,13 @@ struct ProfileView: View {
                 }
 
                 // SECTION 5: SETTINGS
-                Section("Account Settings") {
-                    NavigationLink("Edit Personal Details") {
-                        SettingsView(manager: userManager)
+                Section(header: Text("Account Settings")) {
+                    NavigationLink(destination: SettingsView(manager: userManager)) {
+                        Text("Edit Personal Details")
                     }
                 }
             }
-            .navigationTitle("Profile")
+            .navigationTitle(Text("Profile"))
             .onChange(of: selectedItem) { _ in handleImageSelection() }
         }
     }
@@ -96,7 +96,7 @@ struct ProfileView: View {
             HStack(spacing: 20) {
                 AchievementTile(
                     title: "Top Badge",
-                    value: topBadge?.rawValue ?? "None yet",
+                    value: topBadge?.rawValue ?? NSLocalizedString("None yet", comment: ""),
                     icon: topBadge?.icon ?? "laurel.leading",
                     color: topBadge?.color ?? .gray
                 )
@@ -151,7 +151,6 @@ struct ProfileView: View {
         Task {
             if let data = try? await selectedItem?.loadTransferable(type: Data.self) {
                 await MainActor.run {
-                    // FIX #4: use dedicated image upload function
                     userManager.saveProfileImage(data)
                 }
             }
@@ -171,7 +170,7 @@ struct ProfileView: View {
 // MARK: - Supporting Views
 
 struct AchievementTile: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     let icon: String
     let color: Color
@@ -192,7 +191,7 @@ struct AchievementTile: View {
 }
 
 struct StatRow: View {
-    let title: String
+    let title: LocalizedStringKey
     let value: String
     let icon: String
     let color: Color

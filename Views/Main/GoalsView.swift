@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct GoalsView: View {
-    @ObservedObject var goalManager: GoalManager  // renamed
+    @ObservedObject var goalManager: GoalManager
     @ObservedObject var userManager: UserManager
 
     @State private var showingCreateGoal = false
@@ -27,15 +27,15 @@ struct GoalsView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Your Goals")
+            .navigationTitle(Text("Your Goals"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Menu {
                         Button(action: { showingCreateGoal = true }) {
-                            Label("Create New Journey", systemImage: "plus.circle")
+                            Label(String(localized: "Create New Journey"), systemImage: "plus.circle")
                         }
                         Button(action: { showingJoinGoal = true }) {
-                            Label("Join Existing Group", systemImage: "person.2.badge.key")
+                            Label(String(localized: "Join Existing Group"), systemImage: "person.2.badge.key")
                         }
                     } label: {
                         Image(systemName: "plus.circle.fill")

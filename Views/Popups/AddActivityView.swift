@@ -1,27 +1,37 @@
 import SwiftUI
 
+enum ActivityType: String, CaseIterable {
+    case running = "Running"
+    case swimming = "Swimming"
+    case tennis = "Tennis"
+    case cycling = "Cycling"
+    case walking = "Walking"
+
+    var localizedName: LocalizedStringKey { LocalizedStringKey(rawValue) }
+
+    var baseMultiplier: Double {
+        switch self {
+        case .running: return 150
+        case .swimming: return 120
+        case .tennis: return 100
+        case .cycling: return 80
+        case .walking: return 100
+        }
+    }
+}
+
 struct AddActivityView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var manager: GoalManager
-    @ObservedObject var userManager: UserManager  // FIX #1: needed for UID
+    @ObservedObject var userManager: UserManager
 
-    @State private var selectedActivity = "Running"
+    @State private var selectedActivity: ActivityType = .running
     @State private var duration: Double = 30
     @State private var intensity = 1
 
-    let activities = ["Running", "Swimming", "Tennis", "Cycling", "Walking"]
-
     var calculatedSteps: Int {
-        let baseMultiplier: Double
-        switch selectedActivity {
-        case "Running": baseMultiplier = 150
-        case "Swimming": baseMultiplier = 120
-        case "Tennis": baseMultiplier = 100
-        case "Cycling": baseMultiplier = 80
-        default: baseMultiplier = 100
-        }
         let intensityFactor = Double(intensity + 1) * 0.5 + 0.5
-        return Int(duration * baseMultiplier * intensityFactor)
+        return Int(duration * selectedActivity.baseMultiplier * intensityFactor)
     }
 
     var body: some View {
@@ -29,7 +39,9 @@ struct AddActivityView: View {
             Form {
                 Section(header: Text("Exercise Details")) {
                     Picker("Activity", selection: $selectedActivity) {
-                        ForEach(activities, id: \.self) { Text($0) }
+                        ForEach(ActivityType.allCases, id: \.self) { activity in
+                            Text(activity.localizedName).tag(activity)
+                        }
                     }
 
                     VStack(alignment: .leading) {
@@ -48,7 +60,6 @@ struct AddActivityView: View {
                 Section(header: Text("Estimated Progress")) {
                     HStack {
                         Image(systemName: "shoeprints.fill")
-                        // FIX #5: use formatProgress for steps/km display
                         Text(userManager.formatProgress(steps: calculatedSteps))
                             .font(.headline)
                             .foregroundColor(.blue)
@@ -57,13 +68,12 @@ struct AddActivityView: View {
 
                 Section {
                     Button(action: {
-                        // FIX #1: pass the user's UID so the correct member is found
                         if let uid = userManager.firebaseUser?.uid {
                             manager.addSteps(calculatedSteps, userUID: uid)
                         }
                         dismiss()
                     }) {
-                        Text("Add to \(manager.currentGoal?.name ?? "Goal")")
+                        Text("Add Steps")
                             .frame(maxWidth: .infinity)
                             .fontWeight(.bold)
                     }
@@ -71,7 +81,7 @@ struct AddActivityView: View {
                     .tint(.black)
                 }
             }
-            .navigationTitle("New Activity")
+            .navigationTitle(Text("New Activity"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Cancel") { dismiss() }

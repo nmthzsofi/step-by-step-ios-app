@@ -8,9 +8,10 @@ class GoalManager: ObservableObject {
 
     @Published var selectedGoalIndex: Int = 0
     @Published var showCelebration: Bool = false
-    @Published var celebrationTitle: String = ""
-    @Published var celebrationMessage: String = ""
+    @Published var celebrationTitle: LocalizedStringKey = ""
+    @Published var celebrationMessage: LocalizedStringKey = ""
     @Published var goals: [Goal] = []
+    
 
     var currentGoal: Goal? {
         guard selectedGoalIndex < goals.count else { return nil }

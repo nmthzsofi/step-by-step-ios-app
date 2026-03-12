@@ -1,50 +1,39 @@
-//
-//  CelebrationView.swift
-//  lepesrol-lepesre
-//
-//  Created by Zsófia Németh on 2026. 03. 05..
-//
-
 import SwiftUI
 
 struct CelebrationView: View {
-    let title: String
-    let message: String
+    let title: LocalizedStringKey
+    let message: LocalizedStringKey
     var onDismiss: () -> Void
-    
+
     @State private var isAnimating = false
-    
+
     var body: some View {
         ZStack {
-            // 1. Darkened blurred background
             Color.black.opacity(0.4)
                 .ignoresSafeArea()
                 .onTapGesture { onDismiss() }
-            
-            // 2. The Pop-up Card
+
             VStack(spacing: 25) {
-                // Animated Emoji
                 Text("🎉")
                     .font(.system(size: 80))
-                    // Bouncing effect
                     .phaseAnimator([0, -20, 0]) { content, offset in
                         content.offset(y: offset)
                     } animation: { _ in
                         .easeInOut(duration: 1.0).repeatForever(autoreverses: true)
                     }
-                
+
                 VStack(spacing: 10) {
                     Text(title)
                         .font(.system(size: 28, weight: .black, design: .rounded))
                         .multilineTextAlignment(.center)
-                    
+
                     Text(message)
                         .font(.system(.body, design: .rounded))
                         .foregroundColor(.secondary)
                         .multilineTextAlignment(.center)
                         .padding(.horizontal)
                 }
-                
+
                 Button(action: onDismiss) {
                     Text("Awesome!")
                         .font(.headline)
@@ -58,7 +47,7 @@ struct CelebrationView: View {
             }
             .padding(.vertical, 40)
             .padding(.horizontal, 20)
-            .background(.ultraThinMaterial) // Modern glass look
+            .background(.ultraThinMaterial)
             .cornerRadius(30)
             .overlay(
                 RoundedRectangle(cornerRadius: 30)

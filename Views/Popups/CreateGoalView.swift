@@ -6,23 +6,17 @@ struct CreateGoalView: View {
     @Environment(\.dismiss) var dismiss
     @ObservedObject var goalManager: GoalManager
     @ObservedObject var userManager: UserManager
- 
-    
-    // Identity State
+
     @State private var goalName = ""
     @State private var selectedIcon = "figure.walk"
     @State private var selectedType: GoalType = .individual
-    
-    // NEW: Temporary code to show before creation
     @State private var tempShareCode = ""
-    
-    // Route State
-    @State private var fromText = "Current Location"
+
+    @State private var fromText = ""
     @State private var toText = ""
     @State private var fromItem: MKMapItem?
     @State private var toItem: MKMapItem?
-    
-    // Search State
+
     @State private var searchResults: [MKMapItem] = []
     @State private var activeField: ActiveField = .to
     enum ActiveField { case from, to }
@@ -34,12 +28,24 @@ struct CreateGoalView: View {
             VStack(spacing: 0) {
                 // SECTION 1: THE SEARCH HEADER
                 VStack(spacing: 10) {
-                    searchField(text: $fromText, icon: "circle.circle.fill", color: .blue, placeholder: "From...", field: .from)
-                    searchField(text: $toText, icon: "mappin.and.ellipse", color: .red, placeholder: "To...", field: .to)
+                    searchField(
+                        text: $fromText,
+                        icon: "circle.circle.fill",
+                        color: .blue,
+                        placeholder: "From...",
+                        field: .from
+                    )
+                    searchField(
+                        text: $toText,
+                        icon: "mappin.and.ellipse",
+                        color: .red,
+                        placeholder: "To...",
+                        field: .to
+                    )
                 }
                 .padding()
                 .background(Color(.systemBackground))
-                
+
                 if !searchResults.isEmpty {
                     List(searchResults, id: \.self) { item in
                         Button(action: { selectItem(item) }) {
@@ -51,7 +57,6 @@ struct CreateGoalView: View {
                     }
                     .listStyle(.plain)
                 } else {
-                    // SECTION 2: GOAL DETAILS FORM
                     Form {
                         Section(header: Text("Journey Details")) {
                             TextField("Name your trip (e.g. Summer Trek)", text: $goalName)
@@ -60,34 +65,32 @@ struct CreateGoalView: View {
                         Section(header: Text("Journey Type")) {
                             Picker("Mode", selection: $selectedType) {
                                 ForEach(GoalType.allCases, id: \.self) { type in
-                                    Text(type.rawValue).tag(type)
+                                    Text(type.localizedName).tag(type)
                                 }
                             }
                             .pickerStyle(.segmented)
-                            // NEW: Generate code when user switches to a group type
                             .onChange(of: selectedType) { newType in
                                 if newType != .individual && tempShareCode.isEmpty {
                                     tempShareCode = goalManager.generateRandomCode()
                                 }
                             }
                         }
-                        
-                        // NEW: Group Invitation Section
+
                         if selectedType != .individual {
                             Section(header: Text("Invite Friends")) {
                                 VStack(alignment: .leading, spacing: 8) {
                                     Text("Share this code with your friends to let them join this \(selectedType.rawValue.lowercased()) journey.")
                                         .font(.caption)
                                         .foregroundColor(.secondary)
-                                    
+
                                     HStack {
                                         Text(tempShareCode)
                                             .font(.system(.title3, design: .monospaced))
                                             .fontWeight(.bold)
                                             .foregroundColor(.blue)
-                                        
+
                                         Spacer()
-                                        
+
                                         Button(action: { UIPasteboard.general.string = tempShareCode }) {
                                             Label("Copy", systemImage: "doc.on.doc")
                                                 .font(.caption)
@@ -99,7 +102,7 @@ struct CreateGoalView: View {
                                 }
                             }
                         }
-                        
+
                         Section(header: Text("Choose an Icon")) {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 15) {
@@ -116,7 +119,7 @@ struct CreateGoalView: View {
                                 .padding(.vertical, 5)
                             }
                         }
-                        
+
                         if toItem != nil {
                             Section(header: Text("Summary")) {
                                 HStack {
@@ -129,8 +132,7 @@ struct CreateGoalView: View {
                         }
                     }
                 }
-                
-                // SECTION 3: FINAL BUTTON
+
                 if toItem != nil && !goalName.isEmpty && searchResults.isEmpty {
                     Button(action: finalizeGoal) {
                         Text("Create Journey")
@@ -144,7 +146,7 @@ struct CreateGoalView: View {
                     .padding()
                 }
             }
-            .navigationTitle("New Journey")
+            .navigationTitle(Text("New Journey"))
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
@@ -156,8 +158,8 @@ struct CreateGoalView: View {
     }
 
     // MARK: - Helpers & Functions
-    
-    private func searchField(text: Binding<String>, icon: String, color: Color, placeholder: String, field: ActiveField) -> some View {
+
+    private func searchField(text: Binding<String>, icon: String, color: Color, placeholder: LocalizedStringKey, field: ActiveField) -> some View {
         HStack {
             Image(systemName: icon).foregroundColor(color)
             TextField(placeholder, text: text, onEditingChanged: { _ in activeField = field })
@@ -189,7 +191,7 @@ struct CreateGoalView: View {
     func estimatedSteps() -> Int {
         guard let to = toItem?.placemark.coordinate else { return 0 }
         let from = fromItem?.placemark.coordinate ?? CLLocationCoordinate2D(latitude: 47.49, longitude: 19.04)
-        return goalManager.calculateSteps(from: from, to: to)  // renamed
+        return goalManager.calculateSteps(from: from, to: to)
     }
 
     func finalizeGoal() {
@@ -222,9 +224,7 @@ struct CreateGoalView: View {
             members: [newMember]
         )
 
-        // FIX: saveGoalToFirebase also appends locally via listenToGoalUpdates,
-        // so we only call one method to avoid duplicate entries
         goalManager.saveGoalToFirebase(goal: newGoal)
-
         dismiss()
-    }}
+    }
+}

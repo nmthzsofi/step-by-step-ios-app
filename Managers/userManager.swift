@@ -320,10 +320,11 @@ class UserManager: ObservableObject {
         case .steps:
             let formatter = NumberFormatter()
             formatter.numberStyle = .decimal
-            return (formatter.string(from: NSNumber(value: steps)) ?? "\(steps)") + " steps"
+            let number = formatter.string(from: NSNumber(value: steps)) ?? "\(steps)"
+            return String(format: String(localized: "%@ steps"), number)
         case .kilometers:
             let km = Double(steps) * 0.000762
-            return String(format: "%.2f km", km)
+            return String(format: String(localized: "%.2f km"), km)
         }
     }
 

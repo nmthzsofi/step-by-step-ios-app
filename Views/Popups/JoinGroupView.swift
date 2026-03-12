@@ -27,7 +27,7 @@ struct JoinGroupView: View {
                 }
                 .padding(.top, 40)
 
-                TextField("E.G. XY-789", text: $invitationCode)
+                TextField("E.G. XY789", text: $invitationCode)
                     .font(.system(size: 32, weight: .bold, design: .monospaced))
                     .multilineTextAlignment(.center)
                     .textInputAutocapitalization(.characters)

@@ -8,10 +8,12 @@ import SwiftUI
 import CoreLocation
 import FirebaseFirestore
 
-enum GoalType: String, Codable, CaseIterable {
+enum GoalType: String, CaseIterable, Codable {
     case individual = "Individual"
     case cooperative = "Cooperative"
     case race = "Race"
+
+    var localizedName: LocalizedStringKey { LocalizedStringKey(rawValue) }
 }
 
 struct Goal: Identifiable, Codable {
