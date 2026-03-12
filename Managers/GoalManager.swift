@@ -4,7 +4,7 @@ import CoreLocation
 import FirebaseFirestore
 
 class GoalManager: ObservableObject {
-    private var db = Firestore.firestore()
+    var db = Firestore.firestore()
 
     @Published var selectedGoalIndex: Int = 0
     @Published var showCelebration: Bool = false
@@ -206,20 +206,34 @@ class GoalManager: ObservableObject {
             }
     }
 
-    func joinGoal(code: String, userProfile: Member) {
-        db.collection("goals").whereField("shareCode", isEqualTo: code).getDocuments { snapshot, error in
+    func joinGoal(code: String, userProfile: Member, completion: @escaping (Bool) -> Void) {
+        let cleanCode = code.trimmingCharacters(in: .whitespacesAndNewlines).uppercased()
+        print("DEBUG joinGoal: searching for code: '\(cleanCode)'")
+
+        db.collection("goals").whereField("shareCode", isEqualTo: cleanCode).getDocuments { snapshot, error in
+            if let error = error {
+                print("DEBUG joinGoal: query error: \(error)")
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+
             guard let document = snapshot?.documents.first else {
-                print("Goal not found!")
+                print("DEBUG joinGoal: no goal found for code \(cleanCode)")
+                DispatchQueue.main.async { completion(false) }
                 return
             }
 
             let goalId = document.documentID
 
             self.db.collection("goals").document(goalId).getDocument { snapshot, error in
-                guard var goal = try? snapshot?.data(as: Goal.self) else { return }
+                guard var goal = try? snapshot?.data(as: Goal.self) else {
+                    DispatchQueue.main.async { completion(false) }
+                    return
+                }
 
                 if goal.members.contains(where: { $0.id == userProfile.id }) {
                     print("User already a member of this goal")
+                    DispatchQueue.main.async { completion(false) }
                     return
                 }
 
@@ -236,7 +250,6 @@ class GoalManager: ObservableObject {
                     return dict
                 }
 
-                // NEW: also append the new UID to memberUIDs
                 let memberUIDs = goal.members.compactMap { $0.id }
 
                 self.db.collection("goals").document(goalId).updateData([
@@ -245,14 +258,22 @@ class GoalManager: ObservableObject {
                 ]) { error in
                     if let error = error {
                         print("Error joining goal: \(error)")
+                        DispatchQueue.main.async { completion(false) }
                     } else {
-                        self.listenToGoalUpdates(goalId: goalId)
+                        print("DEBUG joinGoal: successfully joined goal \(goalId)")
+                        DispatchQueue.main.async {
+                            if !self.goals.contains(where: { $0.id == goalId }) {
+                                self.goals.append(goal)
+                                self.selectedGoalIndex = self.goals.count - 1
+                            }
+                            self.listenToGoalUpdates(goalId: goalId)
+                            completion(true)
+                        }
                     }
                 }
             }
         }
     }
-    
     func saveGoalToFirebase(goal: Goal) {
         print("DEBUG saveGoal: member id being saved: \(goal.members.first?.id ?? "nil")")
 

@@ -72,7 +72,6 @@ struct JoinGroupView: View {
     }
 
     func validateAndJoin() {
-        // FIX: require a real profile before joining
         guard let profile = userManager.currentUserProfile else {
             errorMessage = "Profile not loaded. Please try again."
             return
@@ -81,16 +80,10 @@ struct JoinGroupView: View {
         isSearching = true
         errorMessage = nil
 
-        // FIX: pass real user profile instead of UserDefaults string
-        goalManager.joinGoal(code: invitationCode.uppercased(), userProfile: profile)
-
-        // FIX: grant team player badge
-        userManager.grantTeamPlayerBadge()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+        goalManager.joinGoal(code: invitationCode.uppercased(), userProfile: profile) { success in
             isSearching = false
-            let success = goalManager.goals.contains(where: { $0.shareCode == invitationCode.uppercased() })
             if success {
+                userManager.grantTeamPlayerBadge()
                 dismiss()
             } else {
                 errorMessage = "No journey found with this code. Please check and try again."

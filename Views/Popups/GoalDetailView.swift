@@ -3,13 +3,15 @@ import MapKit
 
 struct GoalDetailView: View {
     @Binding var goal: Goal
-    @ObservedObject var goalManager: GoalManager  // renamed
+    @ObservedObject var goalManager: GoalManager
     @ObservedObject var userManager: UserManager
 
     @State private var startAddress: String = "Loading..."
     @State private var endAddress: String = "Loading..."
     @State private var showingDeleteConfirmation = false
     @State private var showingFullLeaderboard = false
+    @State private var isSaving = false
+    @State private var saveError: String? = nil
     @Environment(\.dismiss) var dismiss
 
     let icons = ["figure.walk", "beach.umbrella.fill", "mountain.2.fill", "airplane", "figure.outdoor.cycle", "tent.fill"]
@@ -23,6 +25,19 @@ struct GoalDetailView: View {
             deleteSection
         }
         .navigationTitle("Edit Journey")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Button(action: saveChanges) {
+                    if isSaving {
+                        ProgressView().tint(.blue)
+                    } else {
+                        Text("Done").bold()
+                    }
+                }
+                .disabled(isSaving)
+            }
+        }
         .sheet(isPresented: $showingFullLeaderboard) {
             FullLeaderboardView(members: goal.members, userManager: userManager)
         }
@@ -33,6 +48,42 @@ struct GoalDetailView: View {
             Text(goal.isGroupGoal ? "You will lose your progress in this group." : "This will permanently delete this journey.")
         }
         .onAppear { updateAddresses() }
+    }
+
+    // MARK: - Save
+
+    private func saveChanges() {
+        guard let goalId = goal.id else {
+            saveError = "Could not save — goal ID missing."
+            return
+        }
+
+        isSaving = true
+        saveError = nil
+
+        let updateData: [String: Any] = [
+            "name": goal.name,
+            "icon": goal.icon,
+            "type": goal.type.rawValue,
+            "isGroupGoal": goal.isGroupGoal,
+            "shareCode": goal.shareCode,
+            "startCoordinate": goal.startCoordinate,
+            "coordinates": goal.coordinates,
+            "totalSteps": goal.totalSteps
+        ]
+
+        goalManager.db.collection("goals").document(goalId).updateData(updateData) { error in
+            DispatchQueue.main.async {
+                isSaving = false
+                if let error = error {
+                    saveError = "Save failed: \(error.localizedDescription)"
+                    print("DEBUG saveGoalChanges: error: \(error)")
+                } else {
+                    print("DEBUG saveGoalChanges: success for goal \(goalId)")
+                    dismiss()
+                }
+            }
+        }
     }
 
     // MARK: - Sections
@@ -47,7 +98,7 @@ struct GoalDetailView: View {
             .onChange(of: goal.type) { newType in
                 goal.isGroupGoal = (newType != .individual)
                 if goal.isGroupGoal && goal.shareCode.isEmpty {
-                    goal.shareCode = goalManager.generateRandomCode()  // renamed
+                    goal.shareCode = goalManager.generateRandomCode()
                 }
             }
 
@@ -64,6 +115,12 @@ struct GoalDetailView: View {
                     }
                 }
             }
+
+            if let error = saveError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundColor(.red)
+            }
         }
     }
 
@@ -78,11 +135,9 @@ struct GoalDetailView: View {
                         Circle().fill(rankColor(for: index)).frame(width: 24, height: 24)
                         Text("\(index + 1)").font(.caption2).bold().foregroundColor(.white)
                     }
-                    // Highlight current user
                     Text(topFive[index].firstName)
                         .fontWeight(topFive[index].id == userManager.firebaseUser?.uid ? .bold : .regular)
                     Spacer()
-                    // FIX #5: use formatProgress for steps/km
                     Text(userManager.formatProgress(steps: topFive[index].steps))
                         .foregroundColor(.secondary)
                         .font(.footnote)
@@ -146,7 +201,7 @@ struct GoalDetailView: View {
             HStack {
                 Text("Total Steps")
                 Spacer()
-                Text(userManager.formatProgress(steps: goal.totalSteps))  // FIX #5
+                Text(userManager.formatProgress(steps: goal.totalSteps))
                     .foregroundColor(.secondary)
             }
         }
@@ -210,7 +265,7 @@ struct GoalDetailView: View {
 
 struct FullLeaderboardView: View {
     let members: [Member]
-    let userManager: UserManager  // added for formatting
+    let userManager: UserManager
     @Environment(\.dismiss) var dismiss
 
     var body: some View {

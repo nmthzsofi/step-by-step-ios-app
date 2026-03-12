@@ -221,6 +221,11 @@ class UserManager: ObservableObject {
     // MARK: - Profile Image
 
     func saveProfileImage(_ imageData: Data) {
+        guard let uid = firebaseUser?.uid else {
+            print("DEBUG saveProfileImage: NO UID")
+            return
+        }
+        print("DEBUG saveProfileImage: starting upload, uid: \(uid), bytes: \(imageData.count)")
         guard let uid = firebaseUser?.uid else { return }
 
         // FIX #1: update locally immediately so UI reflects change right away
