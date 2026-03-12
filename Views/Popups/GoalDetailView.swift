@@ -95,11 +95,17 @@ struct GoalDetailView: View {
             Picker("Journey Type", selection: $goal.type) {
                 ForEach(GoalType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
             }
+            .disabled(goal.members.count > 1)
             .onChange(of: goal.type) { newType in
                 goal.isGroupGoal = (newType != .individual)
                 if goal.isGroupGoal && goal.shareCode.isEmpty {
                     goal.shareCode = goalManager.generateRandomCode()
                 }
+            }
+            if goal.members.count > 1 {
+                Text("Journey type cannot be changed once members have joined.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
 
             if goal.isGroupGoal {
